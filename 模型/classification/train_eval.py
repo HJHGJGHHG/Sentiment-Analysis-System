@@ -2,15 +2,14 @@ import paddle
 import logging
 import paddle.nn.functional as F
 
-from paddlenlp.data import Pad, Stack, Tuple
-from paddlenlp.metrics import ChunkEvaluator
-from paddlenlp.transformers import SkepTokenizer, SkepForTokenClassification, LinearDecayWithWarmup
+from paddlenlp.metrics.glue import AccuracyAndF1
+from paddlenlp.transformers import SkepTokenizer, SkepForSequenceClassification, LinearDecayWithWarmup
 
-from preparations import set_seed, get_iter, label2id, id2label
+from preparations import set_seed, get_iter, label2id
 
 logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.INFO)
-handler = logging.FileHandler("extraction_train.txt")
+handler = logging.FileHandler("classification_train.txt")
 handler.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
@@ -22,7 +21,7 @@ def get_args_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_path", default="../checkpoint/original_model")
     parser.add_argument("--num_epochs", type=int, default=3, help="Number of epoches for training.")
-    parser.add_argument("--data_path", type=str, default="../data/ext_data/", help="The path of data.")
+    parser.add_argument("--data_path", type=str, default="../data/cls_data/", help="The path of data.")
     parser.add_argument("--batch_size", type=int, default=16, help="Total examples' number in batch for training.")
     parser.add_argument("--max_seq_len", type=int, default=512, help="Batch size per GPU/CPU for training.")
     parser.add_argument("--learning_rate", type=float, default=3e-5, help="The initial learning rate for optimizer.")
@@ -36,7 +35,7 @@ def get_args_parser():
     parser.add_argument('--device', choices=['cpu', 'gpu'], default="gpu",
                         help="Select which device to train model, defaults to gpu.")
     parser.add_argument("--checkpoints", type=str, default=None, help="Directory to save checkpoint.")
-    parser.add_argument("--load_model_dir", type=str, default="../checkpoint/extraction/best_ext.pdparams")
+    parser.add_argument("--load_model_dir", type=str, default=None)
 
     parser.add_argument("--test_only", type=bool, default=True, help="Only test the model.")
     return parser
@@ -46,34 +45,26 @@ def evaluate(model, dev_iter, metric):
     model.eval()
     metric.reset()
     with paddle.no_grad():
-        for idx, batch in enumerate(dev_iter):
-            input_ids, token_type_ids, seq_lens, labels = batch
+        for batch in dev_iter:
+            input_ids, token_type_ids, _, labels = batch
             logits = model(input_ids, token_type_ids=token_type_ids)
+            correct = metric.compute(logits, labels)
+            metric.update(correct)
 
-            # count metric
-            predictions = logits.argmax(axis=2)
-            num_infer_chunks, num_label_chunks, num_correct_chunks = metric.compute(
-                seq_lens, predictions, labels)
-            metric.update(num_infer_chunks.numpy(),
-                          num_label_chunks.numpy(), num_correct_chunks.numpy())
+    accuracy, precision, recall, f1, _ = metric.accumulate()
 
-    precision, recall, f1 = metric.accumulate()
-
-    return precision, recall, f1
+    return accuracy, precision, recall, f1
 
 
 def train_model(args, model, train_iter, dev_iter, lr_scheduler, optimizer, metric):
     global_step, best_f1 = 1, 0.
     model.train()
     for epoch in range(1, args.num_epochs + 1):
-        for batch_data in train_iter:
-            input_ids, token_type_ids, _, labels = batch_data
-            # logits: batch_size, seq_len, num_tags
+        for batch in train_iter():
+            input_ids, token_type_ids, _, labels = batch
+            # logits: batch_size, seql_len, num_tags
             logits = model(input_ids, token_type_ids=token_type_ids)
-            loss = F.cross_entropy(
-                logits.reshape([-1, len(label2id)]),
-                labels.reshape([-1]),
-                ignore_index=-1)
+            loss = F.cross_entropy(logits, labels)
 
             loss.backward()
             lr_scheduler.step()
@@ -81,23 +72,24 @@ def train_model(args, model, train_iter, dev_iter, lr_scheduler, optimizer, metr
             optimizer.clear_grad()
 
             if global_step > 0 and global_step % args.log_steps == 0:
-                string = "epoch: {0} - global_step: {1}/{2} - loss:{3:.6f}".format(
-                    epoch,
-                    global_step,
-                    len(train_iter) * args.num_epochs,
-                    loss.numpy().item()
+                logger.info(
+                    f"epoch: {epoch} - global_step: {global_step}/{len(train_iter) * args.num_epochs} - loss:{loss.numpy().item():.6f}"
                 )
-                logger.info(string)
             if (global_step > 0 and global_step % args.eval_steps == 0) or global_step == len(
                     train_iter) * args.num_epochs:
-                precision, recall, f1 = evaluate(model, dev_iter, metric)
+                accuracy, precision, recall, f1 = evaluate(model, dev_iter, metric)
                 model.train()
                 if f1 > best_f1:
-                    logger.info(f"best F1 performence has been updated: {best_f1:.5f} --> {f1:.5f}")
+                    logger.info(
+                        f"best F1 performence has been updated: {best_f1:.5f} --> {f1:.5f}"
+                    )
                     best_f1 = f1
                     if args.checkpoints is not None:
                         paddle.save(model.state_dict(), f"{args.checkpoints}/best.pdparams")
-                logger.info(f'evalution result: precision: {precision:.5f}, recall: {recall:.5f},  F1: {f1:.5f}')
+                logger.info(
+                    f'evalution result: accuracy:{accuracy:.5f} precision: {precision:.5f}, recall: {recall:.5f},  F1: {f1:.5f}'
+                )
+
             global_step += 1
 
 
@@ -109,9 +101,8 @@ def main(args):
     dev_iter = get_iter(args, phase="dev", is_train=False)
     test_iter = get_iter(args, phase="test", is_train=False)
 
-    model = SkepForTokenClassification.from_pretrained(args.model_path, num_classes=len(label2id))
+    model = SkepForSequenceClassification.from_pretrained(args.model_path, num_classes=len(label2id))
     if args.load_model_dir is not None:
-        print("Load model from " + args.load_model_dir)
         model.load_dict(paddle.load(args.load_model_dir))
 
     lr_scheduler = LinearDecayWithWarmup(
@@ -130,13 +121,14 @@ def main(args):
         apply_decay_param_fun=lambda x: x in decay_params,
         grad_clip=grad_clip)
 
-    metric = ChunkEvaluator(label2id.keys())
+    metric = AccuracyAndF1()
 
     if not args.test_only:
         train_model(args, model, train_iter, dev_iter, lr_scheduler, optimizer, metric)
     else:
-        precision, recall, f1 = evaluate(model, dev_iter, metric)
-        logger.info(f'dev result: precision: {precision:.5f}, recall: {recall:.5f},  F1: {f1:.5f}')
+        accuracy, precision, recall, f1 = evaluate(model, dev_iter, metric)
+        logger.info(
+            f'dev result: accuracy:{accuracy:.5f} precision: {precision:.5f}, recall: {recall:.5f},  F1: {f1:.5f}')
 
 
 if __name__ == "__main__":
