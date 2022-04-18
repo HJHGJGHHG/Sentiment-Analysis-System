@@ -34,9 +34,9 @@ def load_data(data_path):
             return data
 
 
-class Extracion_Dataset(Dataset):
+class Classification_Dataset(Dataset):
     def __init__(self, args, data, is_test=False):
-        super(Extracion_Dataset, self).__init__()
+        super(Classification_Dataset, self).__init__()
         self.args = args
         self.data = data
         self.tokenizer = args.tokenizer
@@ -66,7 +66,7 @@ class Extracion_Dataset(Dataset):
 
 def get_iter(args, phase, is_train):
     data = load_data(args.data_path + phase + ".txt")
-    dataset = Extracion_Dataset(args, data, is_test=phase == "test")
+    dataset = Classification_Dataset(args, data, is_test=phase == "test")
 
     batchify_fn = lambda samples, fn=Tuple(
         Pad(axis=0, pad_val=args.tokenizer.pad_token_id, dtype="int64"),
