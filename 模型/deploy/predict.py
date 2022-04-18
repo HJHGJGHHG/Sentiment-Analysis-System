@@ -7,6 +7,9 @@ from paddlenlp.data import Pad, Stack, Tuple
 from seqeval.metrics.sequence_labeling import get_entities
 from paddlenlp.transformers import SkepTokenizer, SkepForTokenClassification, SkepForSequenceClassification
 
+import sys
+
+sys.path.append("../")
 from extraction.preparations import Extracion_Dataset, set_seed
 from classification.preparations import Classification_Dataset
 
@@ -88,7 +91,7 @@ def decoding(text, tag_seq):
     return aps
 
 
-def get_ext_iter(args):
+def get_ext_iter(args, is_static=False):
     # load data
     with open(args.data_path, "r", encoding="utf-8") as f:
         data = {"text": []}
@@ -105,6 +108,8 @@ def get_ext_iter(args):
     ): fn(samples)
     batch_sampler = paddle.io.BatchSampler(ext_dataset, batch_size=args.batch_size, shuffle=False)
     ext_iter = DataLoader(ext_dataset, batch_sampler=batch_sampler, collate_fn=batchify_fn)
+    if is_static:
+        return ext_dataset, batchify_fn
     return ext_iter, ext_dataset
 
 
@@ -148,7 +153,7 @@ def predict_ext(args):
     return results
 
 
-def get_cls_iter(args, ext_results):
+def get_cls_iter(args, ext_results, is_static=False):
     cls_dataset = Classification_Dataset(args, ext_results, is_test=True)
     batchify_fn = lambda samples, fn=Tuple(
         Pad(axis=0, pad_val=args.tokenizer.pad_token_id, dtype="int64"),
@@ -157,6 +162,8 @@ def get_cls_iter(args, ext_results):
     ): fn(samples)
     batch_sampler = paddle.io.BatchSampler(cls_dataset, batch_size=args.batch_size, shuffle=False)
     cls_iter = DataLoader(cls_dataset, batch_sampler=batch_sampler, collate_fn=batchify_fn)
+    if is_static:
+        return cls_dataset, batchify_fn
     return cls_iter, cls_dataset
 
 
@@ -239,15 +246,6 @@ def get_args_parser():
                         help="The maximum total input sequence length after tokenization.")
     parser.add_argument("--seed", type=int, default=1234, help="Random seed for initialization.")
     return parser
-
-
-def main():
-    args = get_args_parser().parse_args([])
-    set_seed(args.seed)
-    args.tokenizer = SkepTokenizer.from_pretrained(args.original_model_path)
-    ext_results = predict_ext(args)
-    cls_results = predict_cls(args, ext_results)
-    return cls_results, ext_results
 
 
 if __name__ == '__main__':
