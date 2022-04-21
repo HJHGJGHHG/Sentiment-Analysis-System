@@ -9,4 +9,4 @@ INSERT INTO 商品信息表 VALUES(101, '可乐');
 --INSERT INTO 评论信息表 VALUES(10000, 0, 100, '2022-3-30', '牛');
 SELECT * FROM 用户信息表;
 SELECT * FROM 评论数据表;
-SELECT * FROM 商品信息表;
+SELECT * FROM 结论数据表;
