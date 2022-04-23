@@ -7,6 +7,8 @@ from collections import defaultdict
 from paddle.io import Dataset, DataLoader
 from paddlenlp.data import Pad, Stack, Tuple
 
+from ..database.commentinfo import load_all_comment
+
 id2label = {0: 'O', 1: 'B-Aspect', 2: 'I-Aspect', 3: 'B-Opinion', 4: 'I-Opinion'}
 label2id = {'O': 0, 'B-Aspect': 1, 'I-Aspect': 2, 'B-Opinion': 3, 'I-Opinion': 4}
 
@@ -63,6 +65,10 @@ class Extracion_Dataset(Dataset):
             return encoded_inputs["input_ids"], \
                    encoded_inputs["token_type_ids"], \
                    encoded_inputs["seq_len"], label
+        if self.args.from_database:
+            return encoded_inputs["input_ids"], \
+                   encoded_inputs["token_type_ids"], \
+                   encoded_inputs["seq_len"], self.data["id"][idx]  # 评论ID
 
         return encoded_inputs["input_ids"], \
                encoded_inputs["token_type_ids"], \
@@ -70,7 +76,10 @@ class Extracion_Dataset(Dataset):
 
 
 def get_iter(args, phase, is_train):
-    data = load_data(args.data_path + phase + ".txt")
+    if args.from_database:
+        data = load_all_comment()  # {"id": [], "text": []}
+    else:
+        data = load_data(args.data_path + phase + ".txt")  # {"text": [], "label": []}
     dataset = Extracion_Dataset(args, data, is_test=phase == "test")
 
     batchify_fn = lambda samples, fn=Tuple(

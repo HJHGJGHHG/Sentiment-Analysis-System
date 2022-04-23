@@ -10,7 +10,7 @@ def userinfo_init():
         names = [line.strip() for line in f.readlines()]
         f.close()
 
-    sampled_names = random.sample(names, 20000)
+    sampled_names = random.sample(names, 45000)
     for idx, name in enumerate(sampled_names):
         age = random.randint(18, 75)
         sql = "INSERT INTO 用户信息表 VALUES({0}, '{1}', '12345', {2}, '顾客');".format(idx + 1, name, age)
@@ -69,4 +69,5 @@ def userinfo_login(username, password):
 
 
 if __name__ == "__main__":
-    print(userinfo_login("刘臻劼", "1234"))
+    userinfo_init()
+    #print(userinfo_login("刘臻劼", "1234"))

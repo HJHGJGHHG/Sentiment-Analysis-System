@@ -39,6 +39,7 @@ def get_args_parser():
     parser.add_argument("--load_model_dir", type=str, default="../checkpoint/extraction/best_ext.pdparams")
 
     parser.add_argument("--test_only", type=bool, default=True, help="Only test the model.")
+    parser.add_argument("--from_database", type=bool, default=False, help="Load data from database.")
     return parser
 
 
@@ -107,7 +108,6 @@ def main(args):
 
     train_iter = get_iter(args, phase="train", is_train=True)
     dev_iter = get_iter(args, phase="dev", is_train=False)
-    test_iter = get_iter(args, phase="test", is_train=False)
 
     model = SkepForTokenClassification.from_pretrained(args.model_path, num_classes=len(label2id))
     if args.load_model_dir is not None:
