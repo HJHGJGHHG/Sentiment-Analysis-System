@@ -4,6 +4,7 @@ CREATE TABLE 用户信息表(
 	ID INT,
 	用户名  VARCHAR(20) NOT NULL,
 	密码 VARCHAR(20) NOT NULL,
+	年龄 INT NOT NULL,
 	身份 CHAR(6) CHECK(身份 IN ('顾客', '管理员')),
 	PRIMARY KEY (ID),
 );
