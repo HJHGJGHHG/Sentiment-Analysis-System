@@ -1,5 +1,6 @@
 import json
 import paddle
+import pickle as pkl
 
 from paddle.io import DataLoader
 from collections import defaultdict
@@ -12,7 +13,7 @@ import sys
 sys.path.append("../")
 from extraction.preparations import Extracion_Dataset, set_seed
 from classification.preparations import Classification_Dataset
-from database.commentinfo import load_all_comment
+# from database.commentinfo import load_all_comment
 
 ext_id2label = {0: 'O', 1: 'B-Aspect', 2: 'I-Aspect', 3: 'B-Opinion', 4: 'I-Opinion'}
 ext_label2id = {'O': 0, 'B-Aspect': 1, 'I-Aspect': 2, 'B-Opinion': 3, 'I-Opinion': 4}
@@ -28,17 +29,17 @@ def concate_aspect_and_opinion(text, aspect, opinions):
         else:
             aspect_text += opinion + aspect + "，"
     aspect_text = aspect_text[:-1]
-
+    
     return aspect_text
 
 
 def decoding(text, tag_seq):
     assert len(text) == len(
         tag_seq), f"text len: {len(text)}, tag_seq len: {len(tag_seq)}"
-
+    
     puncs = list(",.?;!，。？；！")
     splits = [idx for idx in range(len(text)) if text[idx] in puncs]
-
+    
     prev = 0
     sub_texts, sub_tag_seqs = [], []
     for i, split in enumerate(splits):
@@ -47,12 +48,12 @@ def decoding(text, tag_seq):
         prev = split
     sub_tag_seqs.append(tag_seq[prev:])
     sub_texts.append((text[prev:]))
-
+    
     ents_list = []
     for sub_text, sub_tag_seq in zip(sub_texts, sub_tag_seqs):
         ents = get_entities(sub_tag_seq, suffix=False)
         ents_list.append((sub_text, ents))
-
+    
     aps = []
     no_a_words = []
     for sub_tag_seq, ent_list in ents_list:
@@ -73,7 +74,7 @@ def decoding(text, tag_seq):
                     sub_aps[-1].append(opinion)
                 else:
                     sub_no_a_words.append(opinion)
-
+        
         if sub_aps:
             aps.extend(sub_aps)
             if len(no_a_words) > 0:
@@ -84,18 +85,19 @@ def decoding(text, tag_seq):
                 aps[-1].extend(sub_no_a_words)
             else:
                 no_a_words.extend(sub_no_a_words)
-
+    
     if no_a_words:
         no_a_words.insert(0, "None")
         aps.append(no_a_words)
-
+    
     return aps
 
 
 def get_ext_iter(args, is_static=False):
     # load data
     if args.from_database:
-        data = load_all_comment()  # {"id": [], "text": []}
+        # data = load_all_comment()  # {"id": [], "text": []}
+        data = pkl.load(open("/root/autodl-tmp/SAS/模型/database/all_comments.pkl", "rb"))
     else:
         with open(args.data_path, "r", encoding="utf-8") as f:
             data = {"text": []}
@@ -103,7 +105,7 @@ def get_ext_iter(args, is_static=False):
                 text = text[:-1] if text[-1] == "\n" else text
                 text = list(text)
                 data["text"].append(text)
-
+    
     ext_dataset = Extracion_Dataset(args, data, is_test=True)
     if args.from_database:
         batchify_fn = lambda samples, fn=Tuple(
@@ -127,13 +129,13 @@ def get_ext_iter(args, is_static=False):
 
 def predict_ext(args):
     ext_iter, ext_dataset = get_ext_iter(args)
-
+    
     # load ext model
     ext_state_dict = paddle.load(args.ext_model_path)
     ext_model = SkepForTokenClassification.from_pretrained(args.original_model_path, num_classes=len(ext_label2id))
     ext_model.load_dict(ext_state_dict)
     print("extraction model loaded.")
-
+    
     ext_model.eval()
     results = {
         "id": [],
@@ -148,7 +150,7 @@ def predict_ext(args):
         else:
             input_ids, token_type_ids, seq_lens = batch
         logits = ext_model(input_ids, token_type_ids=token_type_ids)
-
+        
         predictions = logits.argmax(axis=2).numpy()
         for eid, (seq_len, prediction) in enumerate(zip(seq_lens, predictions)):
             idx = bid * args.batch_size + eid
@@ -161,7 +163,7 @@ def predict_ext(args):
                 aspect, opinions = ''.join(ap[0]), [''.join(x) for x in list(set([tuple(item) for item in ap[1:]]))]
                 aspect_text = concate_aspect_and_opinion(text, aspect, opinions)
                 if args.from_database:
-                    results["id"].append(str(comment_id.numpy()[idx]) + "_" + str(aid))
+                    results["id"].append(str(comment_id.numpy()[eid]) + "_" + str(aid))
                 else:
                     results["id"].append(str(idx) + "_" + str(aid))
                 results["aspect"].append(aspect)
@@ -193,16 +195,16 @@ def predict_cls(args, ext_results):
     cls_model = SkepForSequenceClassification.from_pretrained(args.original_model_path, num_classes=len(cls_label2id))
     cls_model.load_dict(cls_state_dict)
     print("classification model loaded.")
-
+    
     cls_model.eval()
     results = []
     for bid, batch in enumerate(cls_iter):
         input_ids, token_type_ids, seq_lens = batch
         logits = cls_model(input_ids, token_type_ids=token_type_ids)
-
+        
         predictions = logits.argmax(axis=1).numpy().tolist()
         results.extend(predictions)
-
+    
     results = [cls_id2label[pred_id] for pred_id in results]
     print("predicting with classification model done!")
     return results
@@ -211,7 +213,7 @@ def predict_cls(args, ext_results):
 def post_process(args, ext_results, cls_results):
     paddle.device.cuda.empty_cache()
     assert len(ext_results["aspect_text"]) == len(cls_results)
-
+    
     collect_dict = defaultdict(list)
     for i in range(len(cls_results)):
         ext_result = {
@@ -224,7 +226,7 @@ def post_process(args, ext_results, cls_results):
         }
         eid, _ = ext_results["id"][i].split("_")
         collect_dict[eid].append(ext_result)
-
+    
     sentiment_results = []
     for eid in collect_dict.keys():
         sentiment_result = {}
@@ -239,7 +241,7 @@ def post_process(args, ext_results, cls_results):
             })
         sentiment_result["ap_list"] = ap_list
         sentiment_results.append(sentiment_result)
-
+    
     with open(args.save_path, "w", encoding="utf-8") as f:
         for sentiment_result in sentiment_results:
             f.write(json.dumps(sentiment_result, ensure_ascii=False) + "\n")
@@ -248,17 +250,17 @@ def post_process(args, ext_results, cls_results):
 def get_args_parser():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--original_model_path", type=str, default='../checkpoint/original_model',
+    parser.add_argument("--original_model_path", type=str, default='/root/autodl-tmp/SAS/模型/checkpoint/original_model',
                         help="The path of original model path that you want to load.")
     parser.add_argument("--ext_model_path", type=str,
-                        default='../checkpoint/extraction/best_ext.pdparams',
+                        default='/root/autodl-tmp/SAS/模型/checkpoint/extraction/best_ext.pdparams',
                         help="The path of extraction model path that you want to load.")
     parser.add_argument("--cls_model_path", type=str,
-                        default='../checkpoint/classification/best_cls.pdparams',
+                        default='/root/autodl-tmp/SAS/模型/checkpoint/classification/best_cls.pdparams',
                         help="The path of classification model path that you want to load.")
-    parser.add_argument('--data_path', type=str, default='../data/comments/car.txt',
+    parser.add_argument('--data_path', type=str, default='/root/autodl-tmp/SAS/模型/data/comments/beaf.txt',
                         help="The path of test set that you want to predict.")
-    parser.add_argument('--save_path', type=str, default='../data/result.json',
+    parser.add_argument('--save_path', type=str, default='/root/autodl-tmp/SAS/模型/checkpoint/data/result.json',
                         help="The saving path of predict results.")
     parser.add_argument("--batch_size", type=int, default=16, help="Batch size per GPU/CPU for training.")
     parser.add_argument("--max_seq_len", type=int, default=512,
@@ -269,12 +271,11 @@ def get_args_parser():
 
 
 if __name__ == '__main__':
-    paddle.set_device("cpu")
     args = get_args_parser().parse_args([])
     set_seed(args.seed)
     args.tokenizer = SkepTokenizer.from_pretrained(args.original_model_path)
     ext_results = predict_ext(args)
     cls_results = predict_cls(args, ext_results)
-
+    
     post_process(args, ext_results, cls_results)
     print(f"sentiment analysis results has been saved to path: {args.save_path}")

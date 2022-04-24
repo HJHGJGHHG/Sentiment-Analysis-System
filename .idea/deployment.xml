@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" serverName="root@region-11.autodl.com:20362" remoteFilesAllowedToDisappearOnAutoupload="false" showEqualInSync="true" showExcludedInSync="true">
+  <component name="PublishConfigData" autoUpload="Always" serverName="root@region-11.autodl.com:20362" remoteFilesAllowedToDisappearOnAutoupload="false" showEqualInSync="true" showExcludedInSync="true">
     <serverData>
       <paths name="root@region-11.autodl.com:20362">
         <serverdata>
@@ -38,5 +38,6 @@
         </serverdata>
       </paths>
     </serverData>
+    <option name="myAutoUpload" value="ALWAYS" />
   </component>
 </project>
