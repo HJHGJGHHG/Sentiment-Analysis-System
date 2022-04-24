@@ -7,7 +7,10 @@ from collections import defaultdict
 from paddle.io import Dataset, DataLoader
 from paddlenlp.data import Pad, Stack, Tuple
 
-from ..database.commentinfo import load_all_comment
+import sys
+
+sys.path.append("../")
+from database.commentinfo import load_all_comment
 
 id2label = {0: 'O', 1: 'B-Aspect', 2: 'I-Aspect', 3: 'B-Opinion', 4: 'I-Opinion'}
 label2id = {'O': 0, 'B-Aspect': 1, 'I-Aspect': 2, 'B-Opinion': 3, 'I-Opinion': 4}

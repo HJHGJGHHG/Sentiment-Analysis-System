@@ -127,6 +127,7 @@ def get_ext_iter(args, is_static=False):
 
 def predict_ext(args):
     ext_iter, ext_dataset = get_ext_iter(args)
+
     # load ext model
     ext_state_dict = paddle.load(args.ext_model_path)
     ext_model = SkepForTokenClassification.from_pretrained(args.original_model_path, num_classes=len(ext_label2id))
@@ -142,7 +143,10 @@ def predict_ext(args):
         "aspect_text": []
     }
     for bid, batch in enumerate(ext_iter):
-        input_ids, token_type_ids, seq_lens = batch
+        if args.from_database:
+            input_ids, token_type_ids, seq_lens, comment_id = batch
+        else:
+            input_ids, token_type_ids, seq_lens = batch
         logits = ext_model(input_ids, token_type_ids=token_type_ids)
 
         predictions = logits.argmax(axis=2).numpy()
@@ -157,8 +161,7 @@ def predict_ext(args):
                 aspect, opinions = ''.join(ap[0]), [''.join(x) for x in list(set([tuple(item) for item in ap[1:]]))]
                 aspect_text = concate_aspect_and_opinion(text, aspect, opinions)
                 if args.from_database:
-                    comment_id = batch[3]
-                    results["id"].append(str(comment_id) + "_" + str(aid))
+                    results["id"].append(str(comment_id.numpy()[idx]) + "_" + str(aid))
                 else:
                     results["id"].append(str(idx) + "_" + str(aid))
                 results["aspect"].append(aspect)
@@ -245,17 +248,17 @@ def post_process(args, ext_results, cls_results):
 def get_args_parser():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--original_model_path", type=str, default='/root/autodl-tmp/SAS/模型/checkpoint/original_model',
+    parser.add_argument("--original_model_path", type=str, default='../checkpoint/original_model',
                         help="The path of original model path that you want to load.")
     parser.add_argument("--ext_model_path", type=str,
-                        default='/root/autodl-tmp/SAS/模型/checkpoint/extraction/best_ext.pdparams',
+                        default='../checkpoint/extraction/best_ext.pdparams',
                         help="The path of extraction model path that you want to load.")
     parser.add_argument("--cls_model_path", type=str,
-                        default='/root/autodl-tmp/SAS/模型/checkpoint/classification/best_cls.pdparams',
+                        default='../checkpoint/classification/best_cls.pdparams',
                         help="The path of classification model path that you want to load.")
-    parser.add_argument('--data_path', type=str, default='/root/autodl-tmp/SAS/模型/data/comments/car.txt',
+    parser.add_argument('--data_path', type=str, default='../data/comments/car.txt',
                         help="The path of test set that you want to predict.")
-    parser.add_argument('--save_path', type=str, default='/root/autodl-tmp/SAS/模型/data/result.json',
+    parser.add_argument('--save_path', type=str, default='../data/result.json',
                         help="The saving path of predict results.")
     parser.add_argument("--batch_size", type=int, default=16, help="Batch size per GPU/CPU for training.")
     parser.add_argument("--max_seq_len", type=int, default=512,
@@ -266,7 +269,8 @@ def get_args_parser():
 
 
 if __name__ == '__main__':
-    args = get_args_parser().parse_args()
+    paddle.set_device("cpu")
+    args = get_args_parser().parse_args([])
     set_seed(args.seed)
     args.tokenizer = SkepTokenizer.from_pretrained(args.original_model_path)
     ext_results = predict_ext(args)
