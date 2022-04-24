@@ -13,6 +13,7 @@ import sys
 sys.path.append("../")
 from extraction.preparations import Extracion_Dataset, set_seed
 from classification.preparations import Classification_Dataset
+
 # from database.commentinfo import load_all_comment
 
 ext_id2label = {0: 'O', 1: 'B-Aspect', 2: 'I-Aspect', 3: 'B-Opinion', 4: 'I-Opinion'}
@@ -145,6 +146,7 @@ def predict_ext(args):
         "aspect_text": []
     }
     for bid, batch in enumerate(ext_iter):
+        print(bid * args.batch_size)
         if args.from_database:
             input_ids, token_type_ids, seq_lens, comment_id = batch
         else:
@@ -161,6 +163,8 @@ def predict_ext(args):
                 if len(ap) == 1:
                     continue
                 aspect, opinions = ''.join(ap[0]), [''.join(x) for x in list(set([tuple(item) for item in ap[1:]]))]
+                if aspect is "None":
+                    continue
                 aspect_text = concate_aspect_and_opinion(text, aspect, opinions)
                 if args.from_database:
                     results["id"].append(str(comment_id.numpy()[eid]) + "_" + str(aid))
@@ -275,6 +279,7 @@ if __name__ == '__main__':
     set_seed(args.seed)
     args.tokenizer = SkepTokenizer.from_pretrained(args.original_model_path)
     ext_results = predict_ext(args)
+    pkl.dump(ext_results, open("ext_result.pkl", "wb"))
     cls_results = predict_cls(args, ext_results)
     
     post_process(args, ext_results, cls_results)
