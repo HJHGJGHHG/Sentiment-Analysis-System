@@ -13,8 +13,7 @@ import sys
 sys.path.append("../")
 from extraction.preparations import Extracion_Dataset, set_seed
 from classification.preparations import Classification_Dataset
-
-# from database.commentinfo import load_all_comment
+from database.commentinfo import load_all_comment
 
 ext_id2label = {0: 'O', 1: 'B-Aspect', 2: 'I-Aspect', 3: 'B-Opinion', 4: 'I-Opinion'}
 ext_label2id = {'O': 0, 'B-Aspect': 1, 'I-Aspect': 2, 'B-Opinion': 3, 'I-Opinion': 4}
@@ -97,8 +96,7 @@ def decoding(text, tag_seq):
 def get_ext_iter(args, is_static=False):
     # load data
     if args.from_database:
-        # data = load_all_comment()  # {"id": [], "text": []}
-        data = pkl.load(open("/root/autodl-tmp/SAS/模型/database/all_comments.pkl", "rb"))
+        data = load_all_comment()  # {"id": [], "text": []}
     else:
         with open(args.data_path, "r", encoding="utf-8") as f:
             data = {"text": []}
@@ -163,7 +161,7 @@ def predict_ext(args):
                 if len(ap) == 1:
                     continue
                 aspect, opinions = ''.join(ap[0]), [''.join(x) for x in list(set([tuple(item) for item in ap[1:]]))]
-                if aspect is "None":
+                if aspect == "None" or len(aspect) == 1:
                     continue
                 aspect_text = concate_aspect_and_opinion(text, aspect, opinions)
                 if args.from_database:
@@ -203,6 +201,7 @@ def predict_cls(args, ext_results):
     cls_model.eval()
     results = []
     for bid, batch in enumerate(cls_iter):
+        print(bid * args.batch_size)
         input_ids, token_type_ids, seq_lens = batch
         logits = cls_model(input_ids, token_type_ids=token_type_ids)
         
@@ -236,6 +235,7 @@ def post_process(args, ext_results, cls_results):
         sentiment_result = {}
         ap_list = []
         for idx, single_ap in enumerate(collect_dict[eid]):
+            sentiment_result["comment_id"] = eid
             if idx == 0:
                 sentiment_result["text"] = single_ap["text"]
             ap_list.append({
@@ -264,7 +264,7 @@ def get_args_parser():
                         help="The path of classification model path that you want to load.")
     parser.add_argument('--data_path', type=str, default='/root/autodl-tmp/SAS/模型/data/comments/beaf.txt',
                         help="The path of test set that you want to predict.")
-    parser.add_argument('--save_path', type=str, default='/root/autodl-tmp/SAS/模型/checkpoint/data/result.json',
+    parser.add_argument('--save_path', type=str, default='/root/autodl-tmp/SAS/模型/data/result.json',
                         help="The saving path of predict results.")
     parser.add_argument("--batch_size", type=int, default=16, help="Batch size per GPU/CPU for training.")
     parser.add_argument("--max_seq_len", type=int, default=512,
@@ -281,6 +281,7 @@ if __name__ == '__main__':
     ext_results = predict_ext(args)
     pkl.dump(ext_results, open("ext_result.pkl", "wb"))
     cls_results = predict_cls(args, ext_results)
+    pkl.dump(cls_results, open("cls_result.pkl", "wb"))
     
     post_process(args, ext_results, cls_results)
     print(f"sentiment analysis results has been saved to path: {args.save_path}")
