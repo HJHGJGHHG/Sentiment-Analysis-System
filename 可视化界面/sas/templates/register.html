@@ -37,18 +37,21 @@
 <div class="container">
     <form method='post' enctype="multipart/form-data">
         {% csrf_token %}
-        <h2 class="form-signin-heading">Please sign in</h2>
-        <label for="inputEmail" class="sr-only">Email address</label>
-        <input type="text" id="inputUsername" name="usm" class="form-control" placeholder="Username" required=""
+        <h2 class="form-signin-heading">Please register</h2>
+        <input type="text" id="inputUsername" name="usm" class="form-control" placeholder="Username" required="True"
                autofocus="">
         <label for="inputPassword" class="sr-only">Password</label>
         <input type="password" id="inputPassword" name="pwd" class="form-control" placeholder="Password" required="">
+        <input type="age" id="inputAge" name="age" class="form-control" placeholder="Age" required="True">
+        用户身份:
+        <input type="radio" name="usertype" value="顾客" checked/>顾客
+        <input type="radio" name="usertype" value="管理员" />管理员
         <div class="checkbox">
             <label>
                 <input type="checkbox" value="remember-me"> Remember me
             </label>
         </div>
-        <button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
+        <button class="btn btn-lg btn-primary btn-block" type="submit">Register</button>
     </form>
 </div>
 <!-- END Container -->

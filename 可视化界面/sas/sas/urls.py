@@ -15,6 +15,7 @@ Including another URLconf
 """
 from django.urls import path
 from django.contrib import admin
+
 from . import views, testdb
 import sys
 
@@ -26,4 +27,5 @@ urlpatterns = [
     path(r'testdb/', testdb.testdb),
     path('', login, name='login'),
     path('register/', register),
+    
 ]

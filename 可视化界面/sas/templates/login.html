@@ -31,7 +31,6 @@
 
 </head>
 <style>
-
 </style>
 <body class="login" data-admin-utc-offset="0">
 <div class="container">
@@ -51,6 +50,13 @@
         <button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
     </form>
 </div>
+    {% if messages %}
+    <script>
+            {% for msg in messages %}
+                alert('{{ msg.message }}');
+            {% endfor %}
+        </script>
+    {% endif %}
 <!-- END Container -->
 </body>
 </html>

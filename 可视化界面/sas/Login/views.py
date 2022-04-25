@@ -1,7 +1,18 @@
 from django.shortcuts import render
+from django.contrib import messages
 from django.http import HttpResponse
 
 from .models import Users
+
+
+def get_ID():
+    IDs = [id.ID for id in Users.objects.all()]
+    for i, id in enumerate(IDs):
+        if id == (i + 1):
+            continue
+        else:
+            return i + 1
+    return len(IDs) + 1
 
 
 # Create your views here.
@@ -14,11 +25,12 @@ def login(request):
         
         if Users.objects.filter(用户名=usm):
             if Users.objects.filter(用户名=usm)[0].密码 == pwd:
-                return HttpResponse('登录成功')
+                messages.success(request, "登录成功！")
+                return render(request, 'main.html')
             else:
-                return HttpResponse('密码错误')
+                messages.error(request, "密码错误！")
         else:
-            HttpResponse('用户不存在')
+            messages.error(request, "用户不存在！请先注册。")
     return render(request, 'login.html')
 
 
@@ -28,12 +40,18 @@ def register(request):
         # 获取用户通过POST提交过来的数据
         usm = request.POST.get('usm')
         pwd = request.POST.get('pwd')
-        
+        age = request.POST.get('age')
+        usertype = request.POST.get('usertype')
         if Users.objects.filter(用户名=usm):
-            if Users.objects.filter(用户名=usm)[0].密码 == pwd:
-                return HttpResponse('登录成功')
-            else:
-                return HttpResponse('密码错误')
-        else:
-            HttpResponse('用户不存在')
+            messages.error(request, "用户名已存在！")
+            return render(request, 'register.html')
+        
+        ID = get_ID()
+        try:
+            messages.success(request, "用户注册成功！")
+            user = Users(ID=ID, 用户名=usm, 密码=pwd, 年龄=int(age), 身份=usertype)
+            user.save()
+            return render(request, 'main.html')
+        except:
+            messages.error(request, "注册失败！请检查输入是否正确。")
     return render(request, 'register.html')
