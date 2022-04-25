@@ -7,7 +7,7 @@ import sys
 sys.path.append("../")
 from database.SQL import Sql
 
-cnxn = pyodbc.connect('DRIVER={SQL Server};SERVER=LAPTOP-38ACSOA2;DATABASE=情感分析系统;UID=sa;PWD=')
+cnxn = pyodbc.connect('DRIVER={SQL Server};SERVER=10.199.127.191;DATABASE=情感分析系统;UID=sa;PWD=')
 
 
 def get_comment_id():
@@ -95,6 +95,4 @@ def load_all_comment():
 
 
 if __name__ == "__main__":
-    car_comment_init()
-    tea_comment_init()
-    beaf_comment_init()
+    print(load_all_comment())
