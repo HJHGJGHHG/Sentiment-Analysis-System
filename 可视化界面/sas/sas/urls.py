@@ -21,7 +21,7 @@ import sys
 
 sys.path.append("../")
 from Login.views import login, register
-from main.views import main, profile
+from main.views import main, profile, comments
 
 urlpatterns = [
     path(r'admin/', admin.site.urls),
@@ -29,4 +29,6 @@ urlpatterns = [
     path('register/', register),
     path(r'main/', main),
     path(r'profile/', profile),
+    path(r'comments/', comments),
+
 ]
