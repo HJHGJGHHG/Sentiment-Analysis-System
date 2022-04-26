@@ -24,8 +24,7 @@ from Login.views import login, register
 
 urlpatterns = [
     path(r'admin/', admin.site.urls),
-    path(r'testdb/', testdb.testdb),
-    path('', login, name='login'),
+    path(r'login/', login),
     path('register/', register),
-    
+    path(r'main/', testdb.testdb),
 ]
