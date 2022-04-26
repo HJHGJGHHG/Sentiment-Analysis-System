@@ -1,6 +1,5 @@
-from django.shortcuts import render
-from django.contrib import messages
-from django.http import HttpResponse, HttpResponseRedirect
+import json
+from django.shortcuts import render, redirect
 
 from .models import Users
 
@@ -23,10 +22,18 @@ def login(request):
         usm = request.POST.get('usm')
         pwd = request.POST.get('pwd')
         
-        if Users.objects.filter(用户名=usm):
-            if Users.objects.filter(用户名=usm)[0].密码 == pwd:
+        user = Users.objects.filter(用户名=usm)
+        if user:
+            if user[0].密码 == pwd:
                 # TODO: 显示登录成功信息
-                return HttpResponseRedirect('/main')
+                # set cookie
+                rep = redirect('/main')
+                rep.set_cookie('ID', int(user[0].ID))
+                rep.set_cookie('username', json.dumps(usm))
+                rep.set_cookie('password', json.dumps(pwd))
+                rep.set_cookie('usertype', json.dumps(user[0].身份.strip()))
+                rep.set_cookie('age', int(user[0].年龄))
+                return rep
             else:
                 return render(request, 'login.html', {'content2': "密码错误！"})
         else:
@@ -47,9 +54,16 @@ def register(request):
         
         ID = get_ID()
         try:
-            #TODO: 显示注册成功信息
+            # TODO: 显示注册成功信息
             Users.objects.create(ID=ID, 用户名=usm, 密码=pwd, 年龄=int(age), 身份=usertype)
-            return HttpResponseRedirect('/login/')
+            # set cookie
+            rep = redirect('/main')
+            rep.set_cookie('ID', ID)
+            rep.set_cookie('username', json.dumps(usm))
+            rep.set_cookie('password', json.dumps(pwd))
+            rep.set_cookie('usertype', json.dumps(usertype.strip()))
+            rep.set_cookie('age', int(age))
+            return rep
         except:
             render(request, 'register.html', {'content1': "注册失败！请检查输入是否正确。"})
     return render(request, 'register.html')

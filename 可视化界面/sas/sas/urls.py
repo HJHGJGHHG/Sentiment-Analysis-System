@@ -21,10 +21,12 @@ import sys
 
 sys.path.append("../")
 from Login.views import login, register
+from main.views import main, profile
 
 urlpatterns = [
     path(r'admin/', admin.site.urls),
     path(r'login/', login),
     path('register/', register),
-    path(r'main/', testdb.testdb),
+    path(r'main/', main),
+    path(r'profile/', profile),
 ]
