@@ -7,7 +7,7 @@ import sys
 sys.path.append("../")
 from database.SQL import Sql
 
-cnxn = pyodbc.connect('DRIVER={SQL Server};SERVER=10.199.127.191;DATABASE=情感分析系统;UID=sa;PWD=')
+#cnxn = pyodbc.connect('DRIVER={SQL Server};SERVER=LAPTOP-38ACSOA2;DATABASE=情感分析系统;UID=sa;PWD=')
 
 
 def get_comment_id():
@@ -28,7 +28,7 @@ def car_comment_init():
     
     comment_id = get_comment_id()
     for idx, car_comment in enumerate(car_comments):
-        customer_id = random.randint(0, 30000)
+        customer_id = random.randint(0, 35000)
         year = str(random.randint(2018, 2021))
         month = str(random.randint(1, 12))
         day = str(random.randint(1, 28))
@@ -49,7 +49,7 @@ def tea_comment_init():
     
     comment_id = get_comment_id()
     for idx, tea_comment in enumerate(tea_comments):
-        customer_id = random.randint(10000, 40000)
+        customer_id = random.randint(0, 35000)
         year = str(random.randint(2018, 2021))
         month = str(random.randint(1, 12))
         day = str(random.randint(1, 28))
@@ -70,7 +70,7 @@ def beaf_comment_init():
     
     comment_id = get_comment_id()
     for idx, beaf_comment in enumerate(beaf_comments):
-        customer_id = random.randint(40000, 45000)
+        customer_id = random.randint(0, 35000)
         year = str(random.randint(2018, 2021))
         month = str(random.randint(1, 12))
         day = str(random.randint(1, 28))
@@ -95,4 +95,10 @@ def load_all_comment():
 
 
 if __name__ == "__main__":
-    print(load_all_comment())
+    """
+    car_comment_init()
+    tea_comment_init()
+    beaf_comment_init()
+    """
+    result = load_all_comment()
+    pkl.dump(result, open("all_comments.pkl", "wb"))

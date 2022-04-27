@@ -1,5 +1,6 @@
 import pyodbc
 import random
+import datetime
 from SQL import Sql
 
 #cnxn = pyodbc.connect('DRIVER={SQL Server};SERVER=LAPTOP-38ACSOA2;DATABASE=情感分析系统;UID=sa;PWD=')
@@ -9,11 +10,16 @@ def userinfo_init():
     with open("常用中文名.txt", "r", encoding="utf-8") as f:
         names = [line.strip() for line in f.readlines()]
         f.close()
-
-    sampled_names = random.sample(names, 45000)
+        
+    year = str(random.randint(2019, 2021))
+    month = str(random.randint(1, 12))
+    day = str(random.randint(1, 28))
+    date = year + "-" + month + "-" + day
+    sampled_names = random.sample(names, 35000)
+    bio = "这个人很懒，没有留下任何信息"
     for idx, name in enumerate(sampled_names):
         age = random.randint(18, 75)
-        sql = "INSERT INTO 用户信息表 VALUES({0}, '{1}', '12345', {2}, '顾客');".format(idx + 1, name, age)
+        sql = "INSERT INTO 用户信息表 VALUES({0}, '{1}', '12345', {2}, '顾客', '{3}', '{4}');".format(idx + 1, name, age, date, bio)
         Sql(cnxn, sql, isSelect=False)
 
 
@@ -42,7 +48,9 @@ def userinfo_register(username, password, age, identity):
         string = "注册失败！请检查年龄是否输入正确"
         return string
     idx = get_ID()
-    sql = "INSERT INTO 用户信息表 VALUES({0}, '{1}', '{2}', {3}, '{4}');".format(idx, username, password, age, identity)
+    date = datetime.datetime.now()
+    bio = "这个人很懒，没有留下任何信息"
+    sql = "INSERT INTO 用户信息表 VALUES({0}, '{1}', '{2}', {3}, '{4}', '{5}', '{6}');".format(idx, username, password, age, identity, date, bio)
     Sql(cnxn, sql, isSelect=False)
     string = "注册成功！用户名为：{0}，密码为：{1}".format(username, password)
     return string

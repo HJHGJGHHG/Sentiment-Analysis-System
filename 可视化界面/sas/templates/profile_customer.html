@@ -36,9 +36,6 @@
                         IN+
                     </div>
                 </li>
-                <li>
-                    <a href="/main/"><i class="fa fa-diamond"></i> <span class="nav-label">评论数据分析</span></a>
-                </li>
                 <li class="active">
                     <a href="/profile/"><i class="fa fa-th-large"></i> <span class="nav-label">个人资料</span> <span
                             class="fa arrow"></span></a>
@@ -75,14 +72,6 @@
         <div class="row wrapper border-bottom white-bg page-heading">
             <div class="col-lg-10">
                 <h2>资料页</h2>
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item">
-                        <a href="/main/">主页</a>
-                    </li>
-                    <li class="breadcrumb-item active">
-                        <strong>资料页</strong>
-                    </li>
-                </ol>
             </div>
 
         </div>
@@ -120,22 +109,17 @@
                             </div>
                             <div class="ibox-content">
                                 <h4><strong>个人简介</strong></h4>
-                                <div class="ant-input"><textarea name="bio" placeholder="长度不超过200字符" maxlength="200"
+                                <div class="ant-input"><textarea name="bio" placeholder="{{bio}}" maxlength="200"
                                                                  class="ant-input baseinfo-textarea"
                                                                  style="height: 100px; width:300px;font-weight: bold;"></textarea>
                                 </div>
                                 <p></p>
                                 <div class="user-button">
                                     <div class="row">
-                                        <div class="col-md-2">
+                                        <div class="col-md-4">
                                             <button type="submit" class="btn btn-primary btn-sm btn-block"><i
                                                     class="fa fa-envelope"></i> 保存修改
                                             </button>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <a class="btn btn-default btn-sm btn-block" href="/main/"><i
-                                                    class="fa fa-coffee"></i> 返回主页
-                                            </a>
                                         </div>
                                     </div>
                                 </div>

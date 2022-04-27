@@ -8,6 +8,8 @@ class Users(models.Model):
     密码 = models.CharField(max_length=20, db_collation='Chinese_PRC_CI_AS')
     年龄 = models.IntegerField()
     身份 = models.CharField(max_length=6, db_collation='Chinese_PRC_CI_AS', blank=True, null=True)
+    注册时间 = models.DateTimeField()
+    个人简介 = models.CharField(max_length=100, db_collation='Chinese_PRC_CI_AS')
     
     class Meta:
         managed = False

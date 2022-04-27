@@ -14,3 +14,13 @@ class Comments(models.Model):
     class Meta:
         managed = False
         db_table = '评论数据表'
+        
+class Results(models.Model):
+    结论id = models.IntegerField(db_column='结论ID', primary_key=True)  # Field name made lowercase.
+    评论id = models.ForeignKey(Comments, models.DO_NOTHING, db_column='评论ID', blank=True, null=True)  # Field name made lowercase.
+    属性极性对 = models.CharField(max_length=300, db_collation='Chinese_PRC_CI_AS')
+    更新时间 = models.DateTimeField()
+
+    class Meta:
+        managed = False
+        db_table = '结论数据表'

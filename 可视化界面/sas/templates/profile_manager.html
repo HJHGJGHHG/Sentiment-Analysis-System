@@ -37,14 +37,20 @@
                     </div>
                 </li>
                 <li>
-                    <a href="/main/"><i class="fa fa-diamond"></i> <span class="nav-label">评论数据分析</span></a>
+                    <a href="/main/"><i class="fa fa-th-large"></i> <span class="nav-label">评论数据分析</span> <span
+                            class="fa arrow"></span></a>
+                    <ul class="nav nav-second-level">
+                        <li><a href="/main/">顾客与评论分析</a></li>
+                        <li><a href="/main/">情感观点统计</a></li>
+                        <li><a href="/main/">评论属性分析</a></li>
+                    </ul>
                 </li>
                 <li class="active">
                     <a href="/profile/"><i class="fa fa-th-large"></i> <span class="nav-label">管理与查询</span> <span
                             class="fa arrow"></span></a>
                     <ul class="nav nav-second-level">
                         <li class="active"><a href="/profile/">信息管理</a></li>
-                        <li><a href="/main/">评论管理</a></li>
+                        <li><a href="/comments/">评论管理</a></li>
                     </ul>
                 </li>
 
@@ -120,7 +126,7 @@
                             </div>
                             <div class="ibox-content">
                                 <h4><strong>个人简介</strong></h4>
-                                <div class="ant-input"><textarea name="bio" placeholder="长度不超过200字符" maxlength="200"
+                                <div class="ant-input"><textarea name="bio" placeholder="{{bio}}" maxlength="200"
                                                                  class="ant-input baseinfo-textarea"
                                                                  style="height: 100px; width:300px;font-weight: bold;"></textarea>
                                 </div>
@@ -177,6 +183,12 @@
                             </h4>
                             <p>
                                 {{customer_password}}
+                            </p>
+                            <h4>
+                                个人简介
+                            </h4>
+                            <p>
+                                {{customer_bio}}
                             </p>
                             <div class="user-button">
                                 <div class="row">

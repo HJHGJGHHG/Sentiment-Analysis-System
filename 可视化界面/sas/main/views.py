@@ -1,12 +1,24 @@
 import json
-from django.contrib import messages
+import datetime
 from django.shortcuts import render, redirect
+from django.http import QueryDict, JsonResponse, HttpResponse
+from django.views.decorators.csrf import csrf_exempt
 
 import sys
 
 sys.path.append("../")
 from Login.models import Users
 from main.models import Comments
+
+
+def get_comment_ID():
+    IDs = [id.评论id for id in Comments.objects.all()]
+    for i, id in enumerate(IDs):
+        if id == (i + 1):
+            continue
+        else:
+            return i + 1
+    return len(IDs) + 1
 
 
 # Create your views here.
@@ -19,19 +31,19 @@ def main(request):
         # 未登录，跳转到登录界面
         return redirect('/login')
     if usertype == "顾客":
-        return render(request, 'index_customer.html', {'username': username, 'usertype': usertype})
+        return render(request, 'profile_customer.html', {'username': username, 'usertype': usertype})
     else:
-        return render(request, 'index_manager.html', {'username': username, 'usertype': usertype})
+        return render(request, 'index.html', {'username': username, 'usertype': usertype})
 
 
 def profile(request):
-    bio = "长度不超过200字符"
     cookies = request.COOKIES
     try:
         username = json.loads(cookies.get("username"))
         usertype = json.loads(cookies.get("usertype"))
         age = json.loads(cookies.get("age"))
         password = json.loads(cookies.get("password"))
+        bio = Users.objects.get(用户名=username).个人简介
     except TypeError:
         # 未登录，跳转到登录界面
         return redirect('/login')
@@ -53,6 +65,7 @@ def profile_customer(request, username, usertype, age, password, bio):
             user.用户名 = new_usm
             user.密码 = new_pwd
             user.年龄 = int(new_age)
+            user.个人简介 = bio
             user.save()
             return render(request, 'profile_customer.html',
                           {'username': new_usm, 'usertype': usertype, 'age': new_age, 'password': new_pwd,
@@ -78,6 +91,7 @@ def profilt_manager(request, username, usertype, age, password, bio, customer_ID
             user.用户名 = new_usm
             user.密码 = new_pwd
             user.年龄 = int(new_age)
+            user.个人简介 = bio
             user.save()
             return render(request, 'profile_manager.html',
                           {'username': new_usm, 'usertype': usertype, 'age': new_age, 'password': new_pwd,
@@ -104,15 +118,17 @@ def profilt_manager(request, username, usertype, age, password, bio, customer_ID
                                   {'username': username, 'usertype': usertype, 'age': age, 'password': password,
                                    'bio': bio, 'customer_ID': customer_info.ID, 'customer_username': customer_info.用户名,
                                    'customer_age': customer_info.年龄, 'customer_password': customer_info.密码,
-                                   'content1': '查询失败！请检查输入是否正确。',
+                                   'content1': '查询失败！请检查输入是否正确。', 'customer_bio': customer_info.个人简介
                                    })
     return render(request, 'profile_manager.html',
                   {'username': username, 'usertype': usertype, 'age': age, 'password': password,
                    'bio': bio, 'customer_ID': customer_info.ID, 'customer_username': customer_info.用户名,
-                   'customer_age': customer_info.年龄, 'customer_password': customer_info.密码
+                   'customer_age': customer_info.年龄, 'customer_password': customer_info.密码,
+                   'customer_bio': customer_info.个人简介
                    })
 
 
+@csrf_exempt
 def comments(request):
     cookies = request.COOKIES
     try:
@@ -121,27 +137,63 @@ def comments(request):
         age = json.loads(cookies.get("age"))
         password = json.loads(cookies.get("password"))
         ID = json.loads(cookies.get("ID"))
-        comments = Comments.objects.filter(顾客id=7979)
-        for item in comments:
-            print(item.评论内容)
     except TypeError:
         # 未登录，跳转到登录界面
         return redirect('/login')
     if usertype == "顾客":
-        return comments_customer(request, username, usertype, age, password)
+        return comments_customer(request, ID, username, usertype)
     else:
-        # return profilt_manager(request, username, usertype, age, password, bio)
-        pass
+        return comments_manager(request, username, usertype)
 
 
-def comments_customer(request, username, usertype, age, password):
+def comments_customer(request, ID, username, usertype):
+    comments = Comments.objects.filter(顾客id=ID)
     if request.method == "POST" and request.POST:
         # 获取用户通过POST提交过来的数据
+        # 添加评论数据
         product_ID = request.POST.get('product_ID')
-        date = request.POST.get('date')
+        date = datetime.datetime.now()
         comment_text = request.POST.get('comment_text')
-        print(product_ID)
-        print(date)
-        print(comment_text)
+        # 删除评论数据
+        delete_comment_ID = request.POST.get('delete_comment_ID')
+        # 修改评论数据
+        modify_comment_ID = request.POST.get('modify_comment_ID')
+        new_comment_text = request.POST.get('new_comment_text')
+        if product_ID is not None and date is not None and comment_text is not None:
+            # 添加评论
+            try:
+                Comments.objects.create(评论id=get_comment_ID(), 顾客id=Users.objects.get(ID=ID), 商品id=int(product_ID),
+                                        评论时间=date, 评论内容=comment_text)
+                return redirect('/comments')
+            except:
+                # TODO: 添加增加评论失败提示信息
+                print("add fail")
+                pass
+        if delete_comment_ID is not None:
+            # 删除评论
+            try:
+                Comments.objects.get(评论id=delete_comment_ID, 顾客id=Users.objects.get(ID=ID)).delete()
+                return redirect('/comments')
+            except:
+                # TODO: 添加删除评论失败提示信息
+                print("delete fail")
+                pass
+        if modify_comment_ID is not None and new_comment_text is not None:
+            try:
+                comment = Comments.objects.get(评论id=modify_comment_ID)
+                comment.评论时间 = date
+                comment.评论内容 = new_comment_text
+                comment.save()
+                return redirect('/comments')
+            except:
+                # TODO: 添加修改评论失败提示信息
+                print("modify fail")
+                pass
     return render(request, 'comments_customer.html',
-                  {'username': username, 'usertype': usertype, 'age': age, 'password': password})
+                  {'username': username, 'usertype': usertype, 'comments': comments})
+
+
+def comments_manager(request, username, usertype):
+    comments = Comments.objects.all()
+    return render(request, 'comments_manager.html',
+                  {'username': username, 'usertype': usertype, 'comments': comments})
