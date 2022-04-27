@@ -8,7 +8,7 @@ import sys
 
 sys.path.append("../")
 from Login.models import Users
-from main.models import Comments
+from main.models import Comments, Results
 
 
 def get_comment_ID():
@@ -19,6 +19,63 @@ def get_comment_ID():
         else:
             return i + 1
     return len(IDs) + 1
+
+
+def get_items():
+    # 获取 “顾客与评论分析” 上方四个 box 部分中的数据
+    customers_num = Users.objects.count()
+    comments_num = Comments.objects.count()
+    lastmonth = datetime.datetime.now() - datetime.timedelta(days=30)
+    new_comments = Comments.objects.filter(评论时间__gte=lastmonth)
+    active_users = Users.objects.filter(ID__in=[ids.顾客id.ID for ids in new_comments]).count()
+    return customers_num, comments_num, new_comments.count(), active_users
+
+
+def get_index():
+    # 获得表格 x 轴属性
+    month = datetime.datetime.today().month
+    if month in [1, 3, 5, 7, 8, 10, 12]:
+        days = 31
+    elif month == 2:
+        if datetime.datetime.today().year % 4 == 0:
+            days = 29
+        else:
+            days = 28
+    else:
+        days = 30
+    return list(range(1, days + 1))
+
+
+def get_newCustomers():
+    # 获得新增用户数据
+    lastmonth = datetime.datetime.today() - datetime.timedelta(days=datetime.datetime.today().day)
+    new_customers = [item.注册时间.day for item in Users.objects.filter(注册时间__gte=lastmonth)]
+    index = get_index()
+    data = [0] * len(index)
+    for day in new_customers:
+        data[day] += 1
+    return data, index
+
+
+def get_newComments():
+    # 获得新增评论数据
+    lastmonth = datetime.datetime.today() - datetime.timedelta(days=datetime.datetime.today().day)
+    new_customers = [item.评论时间.day for item in Comments.objects.filter(评论时间__gte=lastmonth)]
+    index = get_index()
+    data = [0] * len(index)
+    for day in new_customers:
+        data[day] += 1
+    return data
+
+
+def parse_aspect(aspect):
+    # 处理属性极性对
+    result = ""
+    aspects = aspect.split(";")
+    for item in aspects:
+        result += "".join(item.split("-")[:2])
+        result += " "
+    return result
 
 
 # Create your views here.
@@ -33,7 +90,16 @@ def main(request):
     if usertype == "顾客":
         return render(request, 'profile_customer.html', {'username': username, 'usertype': usertype})
     else:
-        return render(request, 'index.html', {'username': username, 'usertype': usertype})
+        data = get_items()
+        if request.method == "POST":
+            new_customer, index = get_newCustomers()
+            new_comment = get_newComments()
+            return JsonResponse({"index": index, "new_customer": new_customer, "new_comment": new_comment})
+        return render(request, 'index.html',
+                      {'username': username, 'usertype': usertype,
+                       'customers_num': data[0], 'comments_num': data[1],
+                       'new_comments': data[2], 'active_users': data[3]
+                       })
 
 
 def profile(request):
@@ -134,8 +200,6 @@ def comments(request):
     try:
         username = json.loads(cookies.get("username"))
         usertype = json.loads(cookies.get("usertype"))
-        age = json.loads(cookies.get("age"))
-        password = json.loads(cookies.get("password"))
         ID = json.loads(cookies.get("ID"))
     except TypeError:
         # 未登录，跳转到登录界面
@@ -197,3 +261,17 @@ def comments_manager(request, username, usertype):
     comments = Comments.objects.all()
     return render(request, 'comments_manager.html',
                   {'username': username, 'usertype': usertype, 'comments': comments})
+
+
+def opinion(request):
+    cookies = request.COOKIES
+    try:
+        username = json.loads(cookies.get("username"))
+        usertype = json.loads(cookies.get("usertype"))
+    except TypeError:
+        # 未登录，跳转到登录界面
+        return redirect('/login')
+    results = Results.objects.all()
+    results = [(item.评论id.评论id, item.评论id.评论时间, item.评论id.商品id, item.评论id.评论内容, parse_aspect(item.属性极性对)) for item in
+               results]
+    return render(request, 'opinion.html', {'username': username, 'usertype': usertype, 'results': results})

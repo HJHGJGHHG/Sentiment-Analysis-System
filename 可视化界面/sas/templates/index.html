@@ -24,6 +24,7 @@
 
 <body>
 <div id="wrapper">
+
     <nav class="navbar-default navbar-static-side" role="navigation">
         <div class="sidebar-collapse">
             <ul class="nav metismenu" id="side-menu">
@@ -48,7 +49,7 @@
                             class="fa arrow"></span></a>
                     <ul class="nav nav-second-level">
                         <li class="active"><a href="/main/">顾客与评论分析</a></li>
-                        <li><a href="/main/">情感观点统计</a></li>
+                        <li><a href="/opinion/">情感观点统计</a></li>
                         <li><a href="/main/">评论属性分析</a></li>
                     </ul>
                 </li>
@@ -94,8 +95,8 @@
                             <h5>顾客总人数</h5>
                         </div>
                         <div class="ibox-content">
-                            <h1 class="no-margins">40 886,200</h1>
-                            <div class="stat-percent font-bold text-success">98% <i class="fa fa-bolt"></i></div>
+                            <h1 class="no-margins">{{customers_num}}</h1>
+                            <div class="stat-percent font-bold text-success">37% <i class="fa fa-level-up"></i></div>
                             <small>人</small>
                             <small class="no-margins float-right">较去年&ensp;</small>
                         </div>
@@ -107,8 +108,8 @@
                             <h5>评论总数</h5>
                         </div>
                         <div class="ibox-content">
-                            <h1 class="no-margins">275,800</h1>
-                            <div class="stat-percent font-bold text-info">20% <i class="fa fa-level-up"></i></div>
+                            <h1 class="no-margins">{{comments_num}}</h1>
+                            <div class="stat-percent font-bold text-info">26% <i class="fa fa-level-up"></i></div>
                             <small>条</small>
                             <small class="no-margins float-right">较去年&ensp;</small>
                         </div>
@@ -117,14 +118,14 @@
                 <div class="col-lg-3">
                     <div class="ibox ">
                         <div class="ibox-title">
-                            <span class="label label-primary float-right">本周</span>
+                            <span class="label label-primary float-right">本月</span>
                             <h5>新增评论</h5>
                         </div>
                         <div class="ibox-content">
-                            <h1 class="no-margins">106,120</h1>
-                            <div class="stat-percent font-bold text-navy">44% <i class="fa fa-level-up"></i></div>
+                            <h1 class="no-margins">{{new_comments}}</h1>
+                            <div class="stat-percent font-bold text-navy">200% <i class="fa fa-level-up"></i></div>
                             <small>条</small>
-                            <small class="no-margins float-right">较上周&ensp;</small>
+                            <small class="no-margins float-right">较上月&ensp;</small>
                         </div>
                     </div>
                 </div>
@@ -135,11 +136,66 @@
                             <h5>活跃</h5>
                         </div>
                         <div class="ibox-content">
-                            <h1 class="no-margins">80,600</h1>
-                            <div class="stat-percent font-bold text-danger">38% <i class="fa fa-level-down"></i></div>
+                            <h1 class="no-margins">{{active_users}}</h1>
+                            <div class="stat-percent font-bold text-danger">50% <i class="fa fa-level-down"></i></div>
                             <small>人</small>
                             <small class="no-margins float-right">较上月&ensp;</small>
                         </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="ibox ">
+                        <div class="ibox-title">
+                            <h5>数据分析</h5>
+                            <div class="float-right">
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-xs btn-white active">天</button>
+                                    <button type="button" class="btn btn-xs btn-white">月</button>
+                                    <button type="button" class="btn btn-xs btn-white">年</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="ibox-content" style="width: 950px; height:400px;">
+                            <div class="row">
+                                <div class="col-lg-9">
+                                    <div class="flot-chart">
+                                        <div id="Pie1" style="width: 700px;height:400px;"></div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3">
+                                    <ul class="stat-list">
+                                        <li>
+                                            <h2 class="no-margins">2,346</h2>
+                                            <small>订单总数</small>
+                                            <div class="stat-percent">48% <i class="fa fa-level-up text-navy"></i></div>
+                                            <div class="progress progress-mini">
+                                                <div style="width: 48%;" class="progress-bar"></div>
+                                            </div>
+                                        </li>
+                                        <li>
+                                            <h2 class="no-margins ">4,422</h2>
+                                            <small>最近一个月订单</small>
+                                            <div class="stat-percent">60% <i class="fa fa-level-down text-navy"></i>
+                                            </div>
+                                            <div class="progress progress-mini">
+                                                <div style="width: 60%;" class="progress-bar"></div>
+                                            </div>
+                                        </li>
+                                        <li>
+                                            <h2 class="no-margins ">9,180</h2>
+                                            <small>最近一个月销售</small>
+                                            <div class="stat-percent">22% <i class="fa fa-bolt text-navy"></i></div>
+                                            <div class="progress progress-mini">
+                                                <div style="width: 22%;" class="progress-bar"></div>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -196,169 +252,101 @@
 <!-- Toastr -->
 <script src="/static/js/plugins/toastr/toastr.min.js"></script>
 
+<script src="/static/js/echarts.min.js"></script>
+
 <script>
-    $(document).ready(function () {
-        $('.chart').easyPieChart({
-            barColor: '#f8ac59',
-//                scaleColor: false,
-            scaleLength: 5,
-            lineWidth: 4,
-            size: 80
-        });
-
-        $('.chart2').easyPieChart({
-            barColor: '#1c84c6',
-//                scaleColor: false,
-            scaleLength: 5,
-            lineWidth: 4,
-            size: 80
-        });
-
-        var data2 = [
-            [gd(2012, 1, 1), 7], [gd(2012, 1, 2), 6], [gd(2012, 1, 3), 4], [gd(2012, 1, 4), 8],
-            [gd(2012, 1, 5), 9], [gd(2012, 1, 6), 7], [gd(2012, 1, 7), 5], [gd(2012, 1, 8), 4],
-            [gd(2012, 1, 9), 7], [gd(2012, 1, 10), 8], [gd(2012, 1, 11), 9], [gd(2012, 1, 12), 6],
-            [gd(2012, 1, 13), 4], [gd(2012, 1, 14), 5], [gd(2012, 1, 15), 11], [gd(2012, 1, 16), 8],
-            [gd(2012, 1, 17), 8], [gd(2012, 1, 18), 11], [gd(2012, 1, 19), 11], [gd(2012, 1, 20), 6],
-            [gd(2012, 1, 21), 6], [gd(2012, 1, 22), 8], [gd(2012, 1, 23), 11], [gd(2012, 1, 24), 13],
-            [gd(2012, 1, 25), 7], [gd(2012, 1, 26), 9], [gd(2012, 1, 27), 9], [gd(2012, 1, 28), 8],
-            [gd(2012, 1, 29), 5], [gd(2012, 1, 30), 8], [gd(2012, 1, 31), 25]
-        ];
-
-        var data3 = [
-            [gd(2012, 1, 1), 800], [gd(2012, 1, 2), 500], [gd(2012, 1, 3), 600], [gd(2012, 1, 4), 700],
-            [gd(2012, 1, 5), 500], [gd(2012, 1, 6), 456], [gd(2012, 1, 7), 800], [gd(2012, 1, 8), 589],
-            [gd(2012, 1, 9), 467], [gd(2012, 1, 10), 876], [gd(2012, 1, 11), 689], [gd(2012, 1, 12), 700],
-            [gd(2012, 1, 13), 500], [gd(2012, 1, 14), 600], [gd(2012, 1, 15), 700], [gd(2012, 1, 16), 786],
-            [gd(2012, 1, 17), 345], [gd(2012, 1, 18), 888], [gd(2012, 1, 19), 888], [gd(2012, 1, 20), 888],
-            [gd(2012, 1, 21), 987], [gd(2012, 1, 22), 444], [gd(2012, 1, 23), 999], [gd(2012, 1, 24), 567],
-            [gd(2012, 1, 25), 786], [gd(2012, 1, 26), 666], [gd(2012, 1, 27), 888], [gd(2012, 1, 28), 900],
-            [gd(2012, 1, 29), 178], [gd(2012, 1, 30), 555], [gd(2012, 1, 31), 993]
-        ];
-
-
-        var dataset = [
-            {
-                label: "Number of orders",
-                data: data3,
-                color: "#1ab394",
-                bars: {
-                    show: true,
-                    align: "center",
-                    barWidth: 24 * 60 * 60 * 600,
-                    lineWidth: 0
+    // 饼图
+    function Pie1(data,) {
+        var myChart = echarts.init(document.getElementById('Pie1'));
+        option = {
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'cross',
+                    crossStyle: {
+                        color: '#999'
+                    }
                 }
-
-            }, {
-                label: "Payments",
-                data: data2,
-                yaxis: 2,
-                color: "#1C84C6",
-                lines: {
-                    lineWidth: 1,
-                    show: true,
-                    fill: true,
-                    fillColor: {
-                        colors: [{
-                            opacity: 0.2
-                        }, {
-                            opacity: 0.4
-                        }]
+            },
+            legend: {
+                data: ['新注册用户', '新增评论数']
+            },
+            xAxis: [
+                {
+                    type: 'category',
+                    data: data["index"],
+                    axisPointer: {
+                        type: 'shadow'
+                    }
+                }
+            ],
+            yAxis: [
+                {
+                    type: 'value',
+                    name: '新注册用户',
+                    min: 0,
+                    max: 10,
+                    interval: 2,
+                    axisLabel: {
+                        formatter: '{value}'
                     }
                 },
-                splines: {
-                    show: false,
-                    tension: 0.6,
-                    lineWidth: 1,
-                    fill: 0.1
-                },
-            }
-        ];
-
-
-        var options = {
-            xaxis: {
-                mode: "time",
-                tickSize: [3, "day"],
-                tickLength: 0,
-                axisLabel: "Date",
-                axisLabelUseCanvas: true,
-                axisLabelFontSizePixels: 12,
-                axisLabelFontFamily: 'Arial',
-                axisLabelPadding: 10,
-                color: "#d5d5d5"
-            },
-            yaxes: [{
-                position: "left",
-                max: 1070,
-                color: "#d5d5d5",
-                axisLabelUseCanvas: true,
-                axisLabelFontSizePixels: 12,
-                axisLabelFontFamily: 'Arial',
-                axisLabelPadding: 3
-            }, {
-                position: "right",
-                clolor: "#d5d5d5",
-                axisLabelUseCanvas: true,
-                axisLabelFontSizePixels: 12,
-                axisLabelFontFamily: ' Arial',
-                axisLabelPadding: 67
-            }
-            ],
-            legend: {
-                noColumns: 1,
-                labelBoxBorderColor: "#000000",
-                position: "nw"
-            },
-            grid: {
-                hoverable: false,
-                borderWidth: 0
-            }
-        };
-
-        function gd(year, month, day) {
-            return new Date(year, month - 1, day).getTime();
-        }
-
-        var previousPoint = null, previousLabel = null;
-
-        $.plot($("#flot-dashboard-chart"), dataset, options);
-
-        var mapData = {
-            "US": 298,
-            "SA": 200,
-            "DE": 220,
-            "FR": 540,
-            "CN": 120,
-            "AU": 760,
-            "BR": 550,
-            "IN": 200,
-            "GB": 120,
-        };
-
-        $('#world-map').vectorMap({
-            map: 'world_mill_en',
-            backgroundColor: "transparent",
-            regionStyle: {
-                initial: {
-                    fill: '#e4e4e4',
-                    "fill-opacity": 0.9,
-                    stroke: 'none',
-                    "stroke-width": 0,
-                    "stroke-opacity": 0
+                {
+                    type: 'value',
+                    name: '新增评论数',
+                    min: 0,
+                    max: 10,
+                    interval: 5,
+                    axisLabel: {
+                        formatter: '{value}'
+                    }
                 }
-            },
+            ],
+            series: [
 
-            series: {
-                regions: [{
-                    values: mapData,
-                    scale: ["#1ab394", "#22d6b1"],
-                    normalizeFunction: 'polynomial'
-                }]
-            },
+                {
+                    name: '新注册用户',
+                    type: 'bar',
+                    tooltip: {
+                        valueFormatter: function (value) {
+                            return value;
+                        }
+                    },
+                    data: data["new_customer"]
+                },
+                {
+                    name: '新增评论数',
+                    type: 'line',
+                    yAxisIndex: 1,
+                    tooltip: {
+                        valueFormatter: function (value) {
+                            return value;
+                        }
+                    },
+                    data: data["new_comment"]
+                }
+            ]
+        };
+        myChart.setOption(option);
+    }
+
+    window.onload = function () {
+        $.ajaxSetup({
+            data: {csrfmiddlewaretoken: '{{ csrf_token }}'}
         });
-    });
+        $.ajax({
+            url: "/main/",
+            type: "POST",
+            data: {"k1": "v1"},
+            success: function (data) {
+                // 饼图
+                Pie1(data);
+            }
+        })
+    }
 </script>
+
+
 </body>
 
 </html>
