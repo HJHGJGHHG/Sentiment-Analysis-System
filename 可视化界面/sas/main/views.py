@@ -7,6 +7,7 @@ from django.views.decorators.csrf import csrf_exempt
 import sys
 
 sys.path.append("../")
+from collections import Counter
 from Login.models import Users
 from main.models import Comments, Results
 
@@ -76,6 +77,18 @@ def parse_aspect(aspect):
         result += "".join(item.split("-")[:2])
         result += " "
     return result
+
+
+def concate_aspect_and_opinion(text, aspect, opinions):
+    aspect_text = ""
+    for opinion in opinions:
+        if text.find(aspect) <= text.find(opinion):
+            aspect_text += aspect + opinion + "，"
+        else:
+            aspect_text += opinion + aspect + "，"
+    aspect_text = aspect_text[:-1]
+    
+    return list(aspect_text.split("，"))
 
 
 # Create your views here.
@@ -263,7 +276,7 @@ def comments_manager(request, username, usertype):
                   {'username': username, 'usertype': usertype, 'comments': comments})
 
 
-def opinion(request):
+def opinion(request, id=0):
     cookies = request.COOKIES
     try:
         username = json.loads(cookies.get("username"))
@@ -271,7 +284,63 @@ def opinion(request):
     except TypeError:
         # 未登录，跳转到登录界面
         return redirect('/login')
-    results = Results.objects.all()
-    results = [(item.评论id.评论id, item.评论id.评论时间, item.评论id.商品id, item.评论id.评论内容, parse_aspect(item.属性极性对)) for item in
-               results]
-    return render(request, 'opinion.html', {'username': username, 'usertype': usertype, 'results': results})
+    results = Results.objects.filter(评论id__商品id=id)
+    results_list, texts = opinions_clustering(results)
+    return render(request, 'opinion.html', {'username': username, 'usertype': usertype, 'results': results_list,
+                                            'product_id': id, 'texts': texts
+                                            })
+
+
+def opinions_clustering(results):
+    aspects_texts_polarities = {}
+    results_list = []
+    for i, obj in enumerate(results):
+        result_tmp = [obj.评论id.评论id, obj.评论id.评论时间, obj.评论id.商品id, obj.评论id.评论内容, ""]
+        data = ([item.split("-") for item in obj.属性极性对.split(";")], obj.评论id.评论内容)
+        for item in data[0]:
+            if item[0] not in aspects_texts_polarities.keys():
+                aspects_texts_polarities[item[0]] = [[], []]
+            
+            opinions = item[1].split(",")
+            aspect_texts = concate_aspect_and_opinion(data[1], item[0], opinions)
+            result_tmp[4] += " ".join(aspect_texts) + " "
+            if item[2] == '正向':
+                aspects_texts_polarities[item[0]][0].extend(aspect_texts)
+            else:
+                aspects_texts_polarities[item[0]][1].extend(aspect_texts)
+        results_list.append(result_tmp)
+    
+    tmp = sorted(aspects_texts_polarities.items(), key=lambda x: len(x[1][0]) + len(x[1][0]), reverse=True)[:20]
+    data = [[], []]
+    for i in tmp:
+        if len(i[1][0]) > len(i[1][1]):
+            text = Counter(i[1][0]).most_common(1)[0][0]
+            if text[-1] == "不":
+                text += "好"
+            data[0].append((text, i[0]))
+        else:
+            text = Counter(i[1][1]).most_common(1)[0][0]
+            if text[-1] == "不":
+                text += "好"
+            data[1].append((text, i[0]))
+    return results_list, data
+
+
+def analysis(request, product_id=0, phase=0, aspect=""):
+    """
+    :param request:
+    :param product_id: 商品 id：0,1,2
+    :param phase: 0：好评，1：差评
+    :param aspect: 属性 id
+    :return:
+    """
+    cookies = request.COOKIES
+    try:
+        username = json.loads(cookies.get("username"))
+        usertype = json.loads(cookies.get("usertype"))
+    except TypeError:
+        # 未登录，跳转到登录界面
+        return redirect('/login')
+    # results = Results.objects.filter(评论id__商品id=product_id, 属性极性对__contains="空调")
+    print(product_id)
+    return render(request, "analysis.html", {'username': username, 'usertype': usertype, 'product_id': product_id})
