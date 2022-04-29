@@ -4,23 +4,24 @@ import argparse
 from paddlenlp.transformers import SkepForTokenClassification, SkepForSequenceClassification
 
 if __name__ == "__main__":
+    paddle.set_device("cpu")
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_type", type=str, default="extraction", choices=["extraction", "classification"],
                         help="The model type that you wanna export.")
-    parser.add_argument("--original_model_path", type=str, default='/root/autodl-tmp/SAS/模型/checkpoint/original_model',
+    parser.add_argument("--original_model_path", type=str, default='D:/Desktop/Sentiment-Analysis-System/模型/checkpoint/original_model',
                         help="The path of original model path that you want to load.")
     parser.add_argument("--ext_model_path", type=str,
-                        default='/root/autodl-tmp/SAS/模型/checkpoint/extraction/best_ext.pdparams',
+                        default='D:/Desktop/Sentiment-Analysis-System/模型/checkpoint/extraction/best_ext.pdparams',
                         help="The path of extraction model path that you want to load.")
     parser.add_argument("--cls_model_path", type=str,
-                        default='/root/autodl-tmp/SAS/模型/checkpoint/classification/best_cls.pdparams',
+                        default='D:/Desktop/Sentiment-Analysis-System/模型/checkpoint/classification/best_cls.pdparams',
                         help="The path of classification model path that you want to load.")
     
     parser.add_argument("--ext_save_path", type=str,
-                        default='/root/autodl-tmp/SAS/模型/checkpoint/extraction/static',
+                        default='D:/Desktop/Sentiment-Analysis-System/模型/checkpoint/extraction/static',
                         help="The path of the exported static extraction model.")
     parser.add_argument("--cls_save_path", type=str,
-                        default='/root/autodl-tmp/SAS/模型/checkpoint/classification/static',
+                        default='D:/Desktop/Sentiment-Analysis-System/模型/checkpoint/classification/static',
                         help="The path of the exported static classification model.")
     args = parser.parse_args()
     

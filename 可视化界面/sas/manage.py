@@ -3,6 +3,9 @@
 import os
 import sys
 
+sys.path.append("D:/Desktop/Sentiment-Analysis-System")
+sys.path.append("D:/Desktop/Sentiment-Analysis-System/模型")
+
 
 def main():
     """Run administrative tasks."""

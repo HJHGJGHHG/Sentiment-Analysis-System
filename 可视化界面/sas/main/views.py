@@ -1,5 +1,8 @@
+import os
 import json
 import datetime
+import subprocess
+import pickle as pkl
 from django.shortcuts import render, redirect
 from django.http import QueryDict, JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -9,11 +12,34 @@ import sys
 sys.path.append("../")
 from collections import Counter
 from Login.models import Users
+from django.db.models import Max
 from main.models import Comments, Results
+from main.predict import predict
+
+
+def cmd_deal(cmd: str):
+    xe = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    while True:
+        rt_data = xe.stdout.readline().decode("GBK")
+        if rt_data != "":
+            print(rt_data, end="")
+        else:
+            break
+    return xe.wait()  # 执行成功返回0，执行失败返回1
 
 
 def get_comment_ID():
     IDs = [id.评论id for id in Comments.objects.all()]
+    for i, id in enumerate(IDs):
+        if id == (i + 1):
+            continue
+        else:
+            return i + 1
+    return len(IDs) + 1
+
+
+def get_result_ID():
+    IDs = [id.结论id for id in Results.objects.all()]
     for i, id in enumerate(IDs):
         if id == (i + 1):
             continue
@@ -50,7 +76,7 @@ def get_index():
 def get_newCustomers():
     # 获得新增用户数据
     lastmonth = datetime.datetime.today() - datetime.timedelta(days=datetime.datetime.today().day)
-    new_customers = [item.注册时间.day for item in Users.objects.filter(注册时间__gte=lastmonth)]
+    new_customers = [item.注册时间.day - 1 for item in Users.objects.filter(注册时间__gte=lastmonth)]
     index = get_index()
     data = [0] * len(index)
     for day in new_customers:
@@ -61,7 +87,7 @@ def get_newCustomers():
 def get_newComments():
     # 获得新增评论数据
     lastmonth = datetime.datetime.today() - datetime.timedelta(days=datetime.datetime.today().day)
-    new_customers = [item.评论时间.day for item in Comments.objects.filter(评论时间__gte=lastmonth)]
+    new_customers = [item.评论时间.day - 1 for item in Comments.objects.filter(评论时间__gte=lastmonth)]
     index = get_index()
     data = [0] * len(index)
     for day in new_customers:
@@ -91,6 +117,19 @@ def concate_aspect_and_opinion(text, aspect, opinions):
     return list(aspect_text.split("，"))
 
 
+def add_results():
+    with open("D:/Desktop/Sentiment-Analysis-System/可视化界面/sas/result.json", "rb") as f:
+        for line in f.readlines():
+            result = json.loads(line)
+            comment_id = int(result["comment_id"])
+            aspects = ";".join(
+                [item["aspect"] + "-" + ",".join(item["opinions"]) + "-" + item["sentiment_polarity"] for item in
+                 result["ap_list"]])
+            date = datetime.datetime.now()
+            Results.objects.create(结论id=get_result_ID(), 评论id=Comments.objects.get(评论id=comment_id), 属性极性对=aspects,
+                                   更新时间=date)
+
+
 # Create your views here.
 def main(request):
     cookies = request.COOKIES
@@ -101,7 +140,7 @@ def main(request):
         # 未登录，跳转到登录界面
         return redirect('/login')
     if usertype == "顾客":
-        return render(request, 'profile_customer.html', {'username': username, 'usertype': usertype})
+        return profile(request)
     else:
         data = get_items()
         if request.method == "POST":
@@ -133,6 +172,7 @@ def profile(request):
 
 
 def profile_customer(request, username, usertype, age, password, bio):
+    
     if request.method == "POST" and request.POST:
         # 获取用户通过POST提交过来的数据
         new_usm = request.POST.get('new_usm')
@@ -285,19 +325,39 @@ def opinion(request, id=0):
         # 未登录，跳转到登录界面
         return redirect('/login')
     results = Results.objects.filter(评论id__商品id=id)
-    results_list, texts = opinions_clustering(results)
+    results_list, texts, good_rate = opinions_clustering(results)
+    # 对新添加评论进行分析
+    new_comments = {"id": [], "text": []}
+    for item in Comments.objects.filter(评论时间__gt=Results.objects.all().aggregate(Max('更新时间'))["更新时间__max"]):
+        new_comments["id"].append(item.评论id)
+        new_comments["text"].append(item.评论内容)
+    if request.method == "POST" and request.POST:
+        if len(new_comments["id"]) != 0:
+            pkl.dump(new_comments, open("new_comments.pkl", "wb"))
+            predict()
+            add_results()
+            os.remove("D:/Desktop/Sentiment-Analysis-System/可视化界面/sas/new_comments.pkl")
+            os.remove("D:/Desktop/Sentiment-Analysis-System/可视化界面/sas/result.json")
+        return render(request, 'opinion.html', {'username': username, 'usertype': usertype, 'results': results_list,
+                                                'product_id': id, 'texts': texts, 'good_rate': good_rate,
+                                                'new_comments': len(new_comments["id"])
+                                                })
     return render(request, 'opinion.html', {'username': username, 'usertype': usertype, 'results': results_list,
-                                            'product_id': id, 'texts': texts
+                                            'product_id': id, 'texts': texts, 'good_rate': good_rate,
+                                            'new_comments': len(new_comments["id"])
                                             })
 
 
 def opinions_clustering(results):
     aspects_texts_polarities = {}
     results_list = []
+    good = 0
+    j = 0
     for i, obj in enumerate(results):
         result_tmp = [obj.评论id.评论id, obj.评论id.评论时间, obj.评论id.商品id, obj.评论id.评论内容, ""]
         data = ([item.split("-") for item in obj.属性极性对.split(";")], obj.评论id.评论内容)
         for item in data[0]:
+            j += 1
             if item[0] not in aspects_texts_polarities.keys():
                 aspects_texts_polarities[item[0]] = [[], []]
             
@@ -305,6 +365,7 @@ def opinions_clustering(results):
             aspect_texts = concate_aspect_and_opinion(data[1], item[0], opinions)
             result_tmp[4] += " ".join(aspect_texts) + " "
             if item[2] == '正向':
+                good += 1
                 aspects_texts_polarities[item[0]][0].extend(aspect_texts)
             else:
                 aspects_texts_polarities[item[0]][1].extend(aspect_texts)
@@ -323,7 +384,7 @@ def opinions_clustering(results):
             if text[-1] == "不":
                 text += "好"
             data[1].append((text, i[0]))
-    return results_list, data
+    return results_list, data, round(good * 100 / j, 2)
 
 
 def analysis(request, product_id=0, phase=0, aspect=""):
@@ -331,7 +392,7 @@ def analysis(request, product_id=0, phase=0, aspect=""):
     :param request:
     :param product_id: 商品 id：0,1,2
     :param phase: 0：好评，1：差评
-    :param aspect: 属性 id
+    :param aspect: 属性
     :return:
     """
     cookies = request.COOKIES
@@ -341,6 +402,31 @@ def analysis(request, product_id=0, phase=0, aspect=""):
     except TypeError:
         # 未登录，跳转到登录界面
         return redirect('/login')
-    # results = Results.objects.filter(评论id__商品id=product_id, 属性极性对__contains="空调")
-    print(product_id)
-    return render(request, "analysis.html", {'username': username, 'usertype': usertype, 'product_id': product_id})
+    results = Results.objects.filter(评论id__商品id=product_id, 评论id__评论内容__contains=aspect)
+    opinions = []
+    results_list = [[], []]
+    for i, obj in enumerate(results):
+        result_tmp = [obj.评论id.评论id, obj.评论id.评论时间, obj.评论id.评论内容, ""]
+        data = ([item.split("-") for item in obj.属性极性对.split(";")], obj.评论id.评论内容)
+        for item in data[0]:
+            if aspect not in item[0]:
+                continue
+            opinion = item[1].split(",")
+            aspect_texts = concate_aspect_and_opinion(data[1], item[0], opinion)
+            result_tmp[3] += " ".join(aspect_texts) + " "
+            if item[2] == '正向':
+                opinions.extend(opinion)
+                results_list[0].append(result_tmp)
+            else:
+                opinions.extend(opinion)
+                results_list[1].append(result_tmp)
+    
+    if request.method == "POST":
+        opinions_wordcloud = []
+        for item in Counter(opinions).most_common()[:50]:
+            opinions_wordcloud.append({"name": item[0], "value": item[1]})
+        return JsonResponse({
+            "rate": (len(results_list[0]), len(results_list[1])), "opinions_count": opinions_wordcloud})
+    return render(request, "analysis.html",
+                  {'username': username, 'usertype': usertype, 'product_id': product_id, 'aspect': aspect,
+                   "results": results_list, "phase": phase})

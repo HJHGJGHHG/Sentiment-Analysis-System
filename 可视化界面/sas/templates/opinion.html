@@ -41,7 +41,7 @@
                         </ul>
                     </div>
                     <div class="logo-element">
-                        IN+
+                        SA+
                     </div>
                 </li>
                 <li class="active">
@@ -50,7 +50,7 @@
                     <ul class="nav nav-second-level">
                         <li><a href="/main/">顾客与评论分析</a></li>
                         <li class="active"><a href="/opinion/0">情感观点统计</a></li>
-                        <li><a href="/analysis/0/0/1">评论属性分析</a></li>
+                        <li><a href="/analysis/0/0/空间">评论属性分析</a></li>
                     </ul>
                 </li>
                 <li>
@@ -88,7 +88,7 @@
             </nav>
         </div>
         <div class="row  border-bottom white-bg dashboard-header">
-            <div class="col-lg-10">
+            <div class="col-md-5">
                 <h2>评论观点统计</h2>
                 <ul class="menu" id="menu">
                     <li><a href="/opinion/0">商品0</a></li>
@@ -96,8 +96,48 @@
                     <li><a href="/opinion/2">商品2</a></li>
                 </ul>
             </div>
-
-
+            <div class="col-md-3">
+                <h2>总体好评率</h2>
+                <h1 class="no-margins">&ensp;{{good_rate}}%</h1>
+            </div>
+            <div class="col-md-3">
+                <br>
+                <button type="button" class="btn btn-w-m btn-danger float-right" style="height: 45px"
+                        data-toggle="modal"
+                        data-target="#reAnalysis">
+                    重新分析
+                </button>
+            </div>
+            <div class="modal inmodal" id="reAnalysis" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content animated fadeIn">
+                        <form method='post' enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal"><span
+                                        aria-hidden="true">&times;</span><span
+                                        class="sr-only">Close</span></button>
+                                <h4 class="modal-title">重新分析</h4>
+                            </div>
+                            <div class="modal-body">
+                                {% if new_comments != 0 %}
+                                <p style="font-weight: bold; font-size: medium; text-align:center"><strong>距离上次更新添加了{{new_comments}}条评论，是否重新分析？</strong>
+                                </p>
+                                {% else %}
+                                <p style="font-weight: bold; font-size: medium; text-align:center"><strong>距离上次更新无新增评论！</strong>
+                                </p>
+                                {% endif %}
+                            </div>
+                            <div class="modal-footer">
+                                <button type="submit" class="ladda-button btn btn-danger" data-style="contract"><span
+                                        class="ladda-label">重新分析</span><span class="ladda-spinner"></span>
+                                    <div class="ladda-progress" style="width: 100px;"></div>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="wrapper wrapper-content">
             <div class="row">
@@ -109,7 +149,8 @@
                                     差评
                                 </h3>
                                 {% for text in texts.1 %}
-                                <a href="/analysis/{{product_id}}/1/{{text.1}}" type="button" class="btn btn-outline btn-success"
+                                <a href="/analysis/{{product_id}}/1/{{text.1}}" type="button"
+                                   class="btn btn-outline btn-success"
                                    style="font-weight: bold">{{text.0}}</a>
                                 {% endfor %}
                             </div>
@@ -118,7 +159,8 @@
                                     好评
                                 </h3>
                                 {% for text in texts.0 %}
-                                <a href="/analysis/{{product_id}}/0/{{text.1}}" type="button" class="btn btn-outline btn-danger"
+                                <a href="/analysis/{{product_id}}/0/{{text.1}}" type="button"
+                                   class="btn btn-outline btn-danger"
                                    style="font-weight: bold">{{text.0}}</a>
                                 {% endfor %}
                             </div>
@@ -143,15 +185,12 @@
                                     </thead>
                                     <tbody>
                                     {% for result in results %}
-                                    {% if forloop.counter > 500 %}
-                                    {% else %}
                                     <tr class="gradeX">
                                         <td>{{result.0}}</td>
                                         <td>{{result.1}}</td>
                                         <td class="center">{{result.3}}</td>
                                         <td>{{result.4}}</td>
                                     </tr>
-                                    {% endif %}
                                     {% endfor %}
                                     </tbody>
                                     <tfoot>
@@ -277,6 +316,12 @@
 <script src="/static/js/plugins/jqGrid/i18n/grid.locale-en.js"></script>
 <script src="/static/js/plugins/jqGrid/jquery.jqGrid.min.js"></script>
 
+<!-- Ladda -->
+<script src="/static/js/plugins/ladda/spin.min.js"></script>
+<script src="/static/js/plugins/ladda/ladda.min.js"></script>
+<script src="/static/js/plugins/ladda/ladda.jquery.min.js"></script>
+
+
 <!-- Page-Level Scripts -->
 <script>
     $(document).ready(function () {
@@ -359,6 +404,50 @@
         font-weight: bold;
     }
 </style>
+
+<script>
+
+    $(document).ready(function () {
+
+        // Bind normal buttons
+        Ladda.bind('.ladda-button', {timeout: 10000});
+
+        // Bind progress buttons and simulate loading progress
+        Ladda.bind('.progress-demo .ladda-button', {
+            callback: function (instance) {
+                $(this).text = "分析中";
+                var progress = 0;
+                var interval = setInterval(function () {
+                    progress = Math.min(progress + Math.random() * 0.1, 1);
+                    instance.setProgress(progress);
+
+                    if (progress === 1) {
+                        instance.stop();
+                        clearInterval(interval);
+                    }
+                }, 200);
+            }
+        });
+
+
+        var l = $('.ladda-button-demo').ladda();
+
+        l.click(function () {
+            // Start loading
+            l.ladda('start');
+
+            // Timeout example
+            // Do something in backend and then stop ladda
+            setTimeout(function () {
+                l.ladda('stop');
+            }, 12000)
+
+
+        });
+
+    });
+
+</script>
 
 </body>
 
