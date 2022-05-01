@@ -7,7 +7,7 @@ CREATE TABLE 用户信息表(
 	年龄 INT NOT NULL,
 	身份 CHAR(6) CHECK(身份 IN ('顾客', '管理员')),
 	注册时间 DATETIME NOT NULL,
-	个人简介 VARCHAR(200) NOT NULL，
+	个人简介 VARCHAR(200) NOT NULL,
 	PRIMARY KEY (ID),
 );
 
