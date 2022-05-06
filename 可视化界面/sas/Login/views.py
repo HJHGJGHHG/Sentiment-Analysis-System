@@ -53,9 +53,9 @@ def register(request):
         if Users.objects.filter(用户名=usm):
             return render(request, 'register.html', {'content1': "用户名已存在！"})
         
+        # TODO: 判断年龄
         ID = get_ID()
         try:
-            # TODO: 显示注册成功信息
             date = datetime.datetime.now()
             bio = "这个人很懒，没有留下任何信息"
             Users.objects.create(ID=ID, 用户名=usm, 密码=pwd, 年龄=int(age), 身份=usertype, 注册时间=date, 个人简介=bio)

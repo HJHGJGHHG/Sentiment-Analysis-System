@@ -3,7 +3,7 @@ import random
 import datetime
 from SQL import Sql
 
-#cnxn = pyodbc.connect('DRIVER={SQL Server};SERVER=LAPTOP-38ACSOA2;DATABASE=情感分析系统;UID=sa;PWD=')
+cnxn = pyodbc.connect('DRIVER={SQL Server};SERVER=LAPTOP-38ACSOA2;DATABASE=情感分析系统;UID=sa;PWD=')
 
 
 def userinfo_init():
@@ -11,11 +11,11 @@ def userinfo_init():
         names = [line.strip() for line in f.readlines()]
         f.close()
         
-    year = str(random.randint(2019, 2021))
+    year = str(random.randint(2020, 2021))
     month = str(random.randint(1, 12))
     day = str(random.randint(1, 28))
     date = year + "-" + month + "-" + day
-    sampled_names = random.sample(names, 35000)
+    sampled_names = random.sample(names, 5672)
     bio = "这个人很懒，没有留下任何信息"
     for idx, name in enumerate(sampled_names):
         age = random.randint(18, 75)

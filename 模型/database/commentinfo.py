@@ -28,8 +28,8 @@ def car_comment_init():
     
     comment_id = get_comment_id()
     for idx, car_comment in enumerate(car_comments):
-        customer_id = random.randint(0, 35000)
-        year = str(random.randint(2018, 2021))
+        customer_id = random.randint(1, 5672)
+        year = str(random.randint(2020, 2021))
         month = str(random.randint(1, 12))
         day = str(random.randint(1, 28))
         date = year + "-" + month + "-" + day
@@ -49,8 +49,8 @@ def tea_comment_init():
     
     comment_id = get_comment_id()
     for idx, tea_comment in enumerate(tea_comments):
-        customer_id = random.randint(0, 35000)
-        year = str(random.randint(2018, 2021))
+        customer_id = random.randint(1, 5672)
+        year = str(random.randint(2020, 2021))
         month = str(random.randint(1, 12))
         day = str(random.randint(1, 28))
         date = year + "-" + month + "-" + day
@@ -70,8 +70,8 @@ def beaf_comment_init():
     
     comment_id = get_comment_id()
     for idx, beaf_comment in enumerate(beaf_comments):
-        customer_id = random.randint(0, 35000)
-        year = str(random.randint(2018, 2021))
+        customer_id = random.randint(1, 5672)
+        year = str(random.randint(2020, 2021))
         month = str(random.randint(1, 12))
         day = str(random.randint(1, 28))
         date = year + "-" + month + "-" + day
@@ -101,4 +101,4 @@ if __name__ == "__main__":
     beaf_comment_init()
     """
     result = load_all_comment()
-    print(result[0])
+    pkl.dump(result, open("D:/Desktop/Sentiment-Analysis-System/可视化界面/sas/new_comments.pkl", "wb"))

@@ -172,7 +172,6 @@ def profile(request):
 
 
 def profile_customer(request, username, usertype, age, password, bio):
-    
     if request.method == "POST" and request.POST:
         # 获取用户通过POST提交过来的数据
         new_usm = request.POST.get('new_usm')

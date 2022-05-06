@@ -112,15 +112,12 @@
                                     </thead>
                                     <tbody>
                                     {% for comment in comments %}
-                                    {% if forloop.counter > 1000 %}
-                                    {% else %}
                                     <tr class="gradeX">
                                         <td>{{comment.评论id}}</td>
                                         <td>{{comment.评论时间}}</td>
                                         <td>{{comment.商品id}}</td>
                                         <td class="center">{{comment.评论内容}}</td>
                                     </tr>
-                                    {% endif %}
                                     {% endfor %}
                                     </tbody>
                                     <tfoot>
