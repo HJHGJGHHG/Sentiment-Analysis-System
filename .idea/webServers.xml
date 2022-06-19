@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="dc60508e-cbdb-4e46-8a56-594f8915fc25" name="3090">
+        <fileTransfer rootFolder="/root/autodl-tmp" accessType="SFTP" host="region-3.autodl.com" port="37317" sshConfigId="5f76c19f-11aa-4e5b-917d-c9e75312e28f" sshConfig="root@region-3.autodl.com:37317 agent" authAgent="true">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

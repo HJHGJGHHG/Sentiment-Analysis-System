@@ -5,8 +5,8 @@ import paramiko
 
 def predict():
     # 创建一个通道
-    transport = paramiko.Transport(('region-11.autodl.com', 20362))
-    transport.connect(username='root', password='4R2/taxoIS')
+    transport = paramiko.Transport(('region-3.autodl.com', 37317))
+    transport.connect(username='root', password='04hcyqFtlC')
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh.load_system_host_keys()
